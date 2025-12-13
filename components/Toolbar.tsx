@@ -1,6 +1,6 @@
 
 import React, { useRef } from 'react';
-import { Save, Trash2, Download, Eraser, Upload, AlignCenterVertical, AlignCenterHorizontal, Copy, Key } from 'lucide-react';
+import { Save, Trash2, Download, Eraser, Upload, AlignCenterVertical, AlignCenterHorizontal, Key } from 'lucide-react';
 
 interface ToolbarProps {
   onSave: () => void;
@@ -9,7 +9,6 @@ interface ToolbarProps {
   onImport: (event: React.ChangeEvent<HTMLInputElement>) => void;
   onDeleteSelected: () => void;
   onAlign: (direction: 'horizontal' | 'vertical') => void;
-  onDuplicate: () => void;
   onConfigApiKey: () => void;
 }
 
@@ -20,7 +19,6 @@ const Toolbar: React.FC<ToolbarProps> = ({
   onImport,
   onDeleteSelected,
   onAlign,
-  onDuplicate,
   onConfigApiKey
 }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -58,18 +56,6 @@ const Toolbar: React.FC<ToolbarProps> = ({
           <AlignCenterHorizontal size={16} />
         </button>
       </div>
-
-      <div className="w-px h-6 bg-slate-200 mx-1"></div>
-
-      <button
-        type="button"
-        onClick={onDuplicate}
-        className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-slate-600 bg-slate-50 rounded hover:bg-slate-100 transition-colors"
-        title="Duplicar Selecionado (Ctrl+C / Ctrl+V)"
-      >
-        <Copy size={16} />
-        Duplicar
-      </button>
 
       <div className="w-px h-6 bg-slate-200 mx-1"></div>
 

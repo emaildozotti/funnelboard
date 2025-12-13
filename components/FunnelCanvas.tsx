@@ -13,6 +13,7 @@ import ReactFlow, {
   useReactFlow,
   BackgroundVariant,
   ConnectionMode,
+  Viewport,
 } from 'reactflow';
 import Sidebar from './Sidebar';
 import CustomNode from './CustomNode';
@@ -20,24 +21,30 @@ import Toolbar from './Toolbar';
 import AiModal from './AiModal';
 import NodeDetailsModal from './NodeDetailsModal';
 import ApiKeyModal from './ApiKeyModal';
+import HistoryModal from './HistoryModal';
 import FloatingEdge from './FloatingEdge';
-import { SidebarItemType } from '../types';
+import { SidebarItemType, HistoryEntry } from '../types';
 import { generateFunnelFromAI } from '../aiService';
 
 const nodeTypes = { custom: CustomNode };
-const edgeTypes = { floating: FloatingEdge }; // Registro do Floating Edge
+const edgeTypes = { floating: FloatingEdge }; 
 const LOCAL_STORAGE_KEY = 'funnelboard-flow';
+const HISTORY_STORAGE_KEY = 'funnelboard-history';
 
 const FunnelCanvasContent = () => {
   const reactFlowWrapper = useRef<HTMLDivElement>(null);
   const [nodes, setNodes, onNodesChange] = useNodesState([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState([]); 
-  const { project, setViewport, toObject, deleteElements, fitView } = useReactFlow();
+  const { project, setViewport, toObject, deleteElements, fitView, getViewport } = useReactFlow();
   
   const [isAiModalOpen, setIsAiModalOpen] = useState(false);
   const [isApiKeyModalOpen, setIsApiKeyModalOpen] = useState(false);
+  const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false);
   const [editingNodeId, setEditingNodeId] = useState<string | null>(null);
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
+
+  // Histórico State
+  const [history, setHistory] = useState<HistoryEntry[]>([]);
 
   // Clipboard State
   const [bufferedNodes, setBufferedNodes] = useState<Node[]>([]);
@@ -55,11 +62,17 @@ const FunnelCanvasContent = () => {
     }));
   }, [onOpenDetails]);
 
-  // Carregar dados iniciais
+  // Carregar dados iniciais e Histórico
   useEffect(() => {
     const restoreFlow = async () => {
       try {
         const storedData = localStorage.getItem(LOCAL_STORAGE_KEY);
+        const storedHistory = localStorage.getItem(HISTORY_STORAGE_KEY);
+        
+        if (storedHistory) {
+            setHistory(JSON.parse(storedHistory));
+        }
+
         const flow = storedData ? JSON.parse(storedData) : null;
 
         if (flow && flow.nodes && flow.nodes.length > 0) {
@@ -69,7 +82,6 @@ const FunnelCanvasContent = () => {
           setViewport({ x, y, zoom });
         } else {
           // --- ESTADO INICIAL (SE VAZIO) ---
-          // Cria um nó inicial para o usuário não ver uma tela vazia
           const initialNode: Node = {
             id: 'start-node-1',
             type: 'custom',
@@ -86,28 +98,56 @@ const FunnelCanvasContent = () => {
           };
           setNodes([initialNode]);
           setViewport({ x: 0, y: 0, zoom: 1 });
-          // Ajusta a câmera após renderizar
           setTimeout(() => fitView({ padding: 0.5 }), 100);
         }
       } catch (error) {
         console.error("Erro ao restaurar funil:", error);
-        // Em caso de erro crítico (JSON corrompido), limpa e inicia novo
         localStorage.removeItem(LOCAL_STORAGE_KEY);
       }
     };
     restoreFlow();
-  }, []); // Executa apenas uma vez no mount
+  }, []); 
 
-  // Ao conectar, cria uma floating edge
+  // --- GERENCIAMENTO DE HISTÓRICO ---
+  const saveToHistory = useCallback((type: 'ai' | 'manual', prompt?: string) => {
+    const snapshot = {
+        nodes: nodes.map(n => ({...n})), 
+        edges: edges.map(e => ({...e})),
+        viewport: getViewport()
+    };
+
+    const newEntry: HistoryEntry = {
+        id: Date.now().toString(),
+        timestamp: Date.now(),
+        type,
+        prompt,
+        snapshot
+    };
+
+    setHistory(prev => {
+        const newHistory = [newEntry, ...prev].slice(0, 20);
+        localStorage.setItem(HISTORY_STORAGE_KEY, JSON.stringify(newHistory));
+        return newHistory;
+    });
+  }, [nodes, edges, getViewport]);
+
+  const restoreFromHistory = useCallback((entry: HistoryEntry) => {
+      setNodes(hydrateNodes(entry.snapshot.nodes));
+      setEdges(entry.snapshot.edges);
+      setViewport(entry.snapshot.viewport);
+      setTimeout(() => onSave(), 100);
+  }, [setNodes, setEdges, setViewport, hydrateNodes]);
+
+  // --- END HISTÓRICO ---
+
   const onConnect = useCallback((params: Connection) => {
     setEdges((eds) => addEdge({ 
       ...params, 
-      type: 'floating', // Usa o nosso componente customizado
-      animated: false, // A animação é feita via CSS no componente
+      type: 'floating', 
+      animated: false,
     }, eds));
   }, [setEdges]);
 
-  // Remover ao clicar na linha
   const onEdgeClick = useCallback((event: React.MouseEvent, edge: Edge) => {
     event.stopPropagation();
     deleteElements({ edges: [edge] });
@@ -166,9 +206,8 @@ const FunnelCanvasContent = () => {
   const onSave = useCallback(() => {
     const flow = toObject();
     localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(flow));
-    // Feedback visual sutil em vez de alert
     const btn = document.activeElement as HTMLButtonElement;
-    if(btn) {
+    if(btn && btn.tagName === 'BUTTON') {
         const originalText = btn.innerText;
         btn.innerText = "Salvo!";
         setTimeout(() => btn.innerText = originalText, 1000);
@@ -238,7 +277,6 @@ const FunnelCanvasContent = () => {
     downloadAnchorNode.remove();
   }, [toObject]);
 
-  // Função para alinhar nós selecionados
   const onAlignNodes = useCallback((direction: 'horizontal' | 'vertical') => {
     const selectedNodes = nodes.filter((n) => n.selected);
     if (selectedNodes.length < 2) {
@@ -272,7 +310,10 @@ const FunnelCanvasContent = () => {
 
   const handleGenerateAi = useCallback(async (prompt: string) => {
     try {
+        saveToHistory('ai', prompt);
+
         const { nodes: newNodes, edges: newEdges } = await generateFunnelFromAI(prompt, nodes);
+        
         setNodes(hydrateNodes(newNodes));
         
         const styledEdges = (newEdges || []).map((e: any) => ({
@@ -282,6 +323,8 @@ const FunnelCanvasContent = () => {
         setEdges(styledEdges);
 
         setTimeout(() => fitView({ padding: 0.2, duration: 1000 }), 100);
+        setTimeout(() => onSave(), 500);
+
     } catch (error: any) {
         if (error.message === "MISSING_API_KEY") {
             setIsApiKeyModalOpen(true);
@@ -290,9 +333,8 @@ const FunnelCanvasContent = () => {
             alert("Erro na IA: " + error.message);
         }
     }
-  }, [nodes, setNodes, setEdges, fitView, hydrateNodes]);
+  }, [nodes, setNodes, setEdges, fitView, hydrateNodes, saveToHistory, onSave]);
 
-  // --- COPY & PASTE & DUPLICATE LOGIC ---
   const onCopy = useCallback(() => {
     const selectedNodes = nodes.filter((n) => n.selected);
     const selectedNodeIds = new Set(selectedNodes.map(n => n.id));
@@ -314,7 +356,7 @@ const FunnelCanvasContent = () => {
         id: newId,
         position: { x: node.position.x + 50, y: node.position.y + 50 },
         selected: true,
-        data: { ...node.data }, // Shallow copy data
+        data: { ...node.data }, 
       };
     });
 
@@ -326,51 +368,13 @@ const FunnelCanvasContent = () => {
       selected: true,
     }));
 
-    // Deselect current nodes
     setNodes((nds) => nds.map((n) => ({ ...n, selected: false })).concat(hydrateNodes(newNodes)));
     setEdges((eds) => eds.map((e) => ({ ...e, selected: false })).concat(newEdges));
 
   }, [bufferedNodes, bufferedEdges, setNodes, setEdges, hydrateNodes]);
 
-  const onDuplicate = useCallback(() => {
-    const selectedNodes = nodes.filter((n) => n.selected);
-    if (selectedNodes.length === 0) {
-        alert("Selecione itens para duplicar.");
-        return;
-    }
-
-    const selectedNodeIds = new Set(selectedNodes.map(n => n.id));
-    const edgesToCopy = edges.filter(e => selectedNodeIds.has(e.source) && selectedNodeIds.has(e.target));
-
-    const idMap: Record<string, string> = {};
-    const newNodes = selectedNodes.map((node) => {
-      const newId = `${node.type}-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`;
-      idMap[node.id] = newId;
-      return {
-        ...node,
-        id: newId,
-        position: { x: node.position.x + 50, y: node.position.y + 50 },
-        selected: true,
-        data: { ...node.data },
-      };
-    });
-
-    const newEdges = edgesToCopy.map((edge) => ({
-      ...edge,
-      id: `e-${idMap[edge.source]}-${idMap[edge.target]}-${Date.now()}`,
-      source: idMap[edge.source],
-      target: idMap[edge.target],
-      selected: true,
-    }));
-
-    setNodes((nds) => nds.map((n) => ({ ...n, selected: false })).concat(hydrateNodes(newNodes)));
-    setEdges((eds) => eds.map((e) => ({ ...e, selected: false })).concat(newEdges));
-
-  }, [nodes, edges, setNodes, setEdges, hydrateNodes]);
-
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      // Ignora se estiver digitando em input
       if (['INPUT', 'TEXTAREA'].includes((e.target as HTMLElement).tagName)) return;
 
       if ((e.ctrlKey || e.metaKey) && e.key === 'c') {
@@ -390,6 +394,7 @@ const FunnelCanvasContent = () => {
     <div className="flex h-full w-full overflow-hidden">
       <Sidebar 
         onOpenAi={() => setIsAiModalOpen(true)}
+        onOpenHistory={() => setIsHistoryModalOpen(true)}
       />
       
       <div 
@@ -402,7 +407,6 @@ const FunnelCanvasContent = () => {
             onExport={onExport} onDeleteSelected={onDeleteSelected} 
             onAlign={onAlignNodes}
             onImport={onImport}
-            onDuplicate={onDuplicate}
             onConfigApiKey={() => setIsApiKeyModalOpen(true)}
         />
         <ReactFlow
@@ -434,6 +438,7 @@ const FunnelCanvasContent = () => {
       </div>
       <AiModal isOpen={isAiModalOpen} onClose={() => setIsAiModalOpen(false)} onGenerate={handleGenerateAi} hasContext={nodes.length > 0} />
       <ApiKeyModal isOpen={isApiKeyModalOpen} onClose={() => setIsApiKeyModalOpen(false)} />
+      <HistoryModal isOpen={isHistoryModalOpen} onClose={() => setIsHistoryModalOpen(false)} history={history} onRestore={restoreFromHistory} />
       <NodeDetailsModal 
         isOpen={isDetailsModalOpen}
         onClose={() => setIsDetailsModalOpen(false)}

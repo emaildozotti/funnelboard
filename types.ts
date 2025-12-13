@@ -1,4 +1,6 @@
 
+import { Node, Edge, Viewport } from 'reactflow';
+
 export type FunnelCategory = 'traffic' | 'page' | 'action' | 'crm' | 'decision' | 'text';
 
 export interface FunnelNodeData {
@@ -16,4 +18,16 @@ export interface SidebarItemType {
   label: string;
   category: FunnelCategory;
   iconName: string;
+}
+
+export interface HistoryEntry {
+  id: string;
+  timestamp: number;
+  type: 'ai' | 'manual';
+  prompt?: string; // O que foi pedido (se for IA)
+  snapshot: {
+    nodes: Node[];
+    edges: Edge[];
+    viewport: Viewport;
+  };
 }
