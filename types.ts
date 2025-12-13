@@ -1,0 +1,19 @@
+
+export type FunnelCategory = 'traffic' | 'page' | 'action' | 'crm' | 'decision' | 'text';
+
+export interface FunnelNodeData {
+  label: string;
+  type: string;
+  category: FunnelCategory;
+  iconName: string;
+  items?: string[]; // Lista opcional para perguntas de form/quiz
+  description?: string; // Notas, copy ou detalhes adicionais
+  onEdit?: (id: string) => void; // Callback para abrir o modal de detalhes
+}
+
+export interface SidebarItemType {
+  type: string;
+  label: string;
+  category: FunnelCategory;
+  iconName: string;
+}

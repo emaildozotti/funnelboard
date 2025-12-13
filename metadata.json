@@ -1,0 +1,5 @@
+{
+  "name": "FunnelBoard",
+  "description": "Um construtor visual de funis de marketing que permite aos usuários arrastar, soltar e conectar elementos de estratégia em um quadro infinito. Possui persistência local e exportação.",
+  "requestFramePermissions": []
+}
