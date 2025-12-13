@@ -1,7 +1,7 @@
 
 import { Node, Edge, Viewport } from 'reactflow';
 
-export type FunnelCategory = 'traffic' | 'page' | 'action' | 'crm' | 'decision' | 'text';
+export type FunnelCategory = 'traffic' | 'page' | 'action' | 'crm' | 'commercial' | 'decision' | 'text';
 
 export interface FunnelNodeData {
   label: string;

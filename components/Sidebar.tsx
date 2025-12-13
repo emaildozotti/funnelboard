@@ -20,7 +20,7 @@ const Sidebar: React.FC<SidebarProps> = ({
   };
 
   // Ordem de exibição das categorias
-  const categories = ['text', 'traffic', 'page', 'action', 'crm', 'decision'];
+  const categories = ['text', 'traffic', 'page', 'action', 'crm', 'commercial', 'decision'];
 
   return (
     <aside className="w-64 h-full bg-white border-r border-slate-200 flex flex-col shadow-xl z-20 flex-shrink-0 select-none">
@@ -80,6 +80,7 @@ const Sidebar: React.FC<SidebarProps> = ({
                       ${item.category === 'traffic' ? 'text-blue-500 bg-blue-50' : ''}
                       ${item.category === 'page' ? 'text-emerald-500 bg-emerald-50' : ''}
                       ${item.category === 'action' ? 'text-amber-500 bg-amber-50' : ''}
+                      ${item.category === 'commercial' ? 'text-slate-700 bg-slate-100' : ''}
                       ${item.category === 'crm' ? 'text-cyan-600 bg-cyan-50' : ''}
                       ${item.category === 'decision' ? 'text-purple-500 bg-purple-50' : ''}
                       ${item.category === 'text' ? 'text-slate-500 bg-slate-100' : ''}

@@ -182,6 +182,10 @@ const CustomNode = ({ id, data, selected }: NodeProps<FunnelNodeData>) => {
           borderColor = 'border-cyan-400';
           accentColor = 'bg-cyan-50 text-cyan-600';
           break;
+        case 'commercial':
+          borderColor = 'border-slate-400';
+          accentColor = 'bg-slate-100 text-slate-700';
+          break;
         case 'decision':
           borderColor = 'border-purple-400';
           accentColor = 'bg-purple-50 text-purple-600';

@@ -53,7 +53,17 @@ import {
 
   // Texto
   Type, // Título
-  StickyNote // Nota
+  StickyNote, // Nota
+
+  // Comercial & High Ticket (Novos)
+  Headset, // SDR
+  Briefcase, // Closer
+  UserX, // No Show
+  CalendarCheck, // Compareceu
+  PhoneForwarded, // Follow Up
+  FileOutput, // Proposta
+  Handshake, // Fechamento
+  Users // Reunião/Call
 } from 'lucide-react';
 import { SidebarItemType } from './types';
 
@@ -111,7 +121,17 @@ export const IconMap: Record<string, React.ElementType> = {
 
   // Texto
   Type,
-  StickyNote
+  StickyNote,
+
+  // Comercial
+  Headset,
+  Briefcase,
+  UserX,
+  CalendarCheck,
+  PhoneForwarded,
+  FileOutput,
+  Handshake,
+  Users
 };
 
 export const CATEGORY_COLORS = {
@@ -119,6 +139,7 @@ export const CATEGORY_COLORS = {
   page: 'border-emerald-500 text-emerald-600 bg-emerald-50',
   action: 'border-amber-500 text-amber-600 bg-amber-50',
   crm: 'border-cyan-500 text-cyan-600 bg-cyan-50',
+  commercial: 'border-slate-600 text-slate-700 bg-slate-100', // Nova cor séria/business
   decision: 'border-purple-500 text-purple-600 bg-purple-50',
   text: 'border-slate-300 text-slate-600 bg-slate-50',
 };
@@ -128,6 +149,7 @@ export const CATEGORY_LABELS: Record<string, string> = {
   page: 'Páginas',
   action: 'Ações',
   crm: 'CRM & Pipeline',
+  commercial: 'Comercial & Vendas',
   decision: 'Lógica',
   text: 'Texto & Notas'
 };
@@ -188,6 +210,16 @@ export const FUNNEL_ELEMENTS: SidebarItemType[] = [
   { type: 'crm-tag-lead', label: 'Tag Lead', category: 'crm', iconName: 'Tags' },
   { type: 'crm-task', label: 'Criar Tarefa', category: 'crm', iconName: 'ClipboardList' },
   { type: 'crm-qualify', label: 'Qualificar', category: 'crm', iconName: 'UserCheck' },
+
+  // --- COMERCIAL & HIGH TICKET ---
+  { type: 'comm-sdr', label: 'SDR / Pré-Venda', category: 'commercial', iconName: 'Headset' },
+  { type: 'comm-closer', label: 'Closer / Vendedor', category: 'commercial', iconName: 'Briefcase' },
+  { type: 'comm-meeting', label: 'Reunião / Call', category: 'commercial', iconName: 'Users' },
+  { type: 'comm-show', label: 'Compareceu', category: 'commercial', iconName: 'CalendarCheck' },
+  { type: 'comm-noshow', label: 'Não Compareceu', category: 'commercial', iconName: 'UserX' },
+  { type: 'comm-followup', label: 'Follow Up', category: 'commercial', iconName: 'PhoneForwarded' },
+  { type: 'comm-proposal', label: 'Proposta Enviada', category: 'commercial', iconName: 'FileOutput' },
+  { type: 'comm-won', label: 'Fechamento / Won', category: 'commercial', iconName: 'Handshake' },
 
   // --- DECISÕES ---
   { type: 'decision-yes', label: 'Sim / Ok', category: 'decision', iconName: 'Check' },
