@@ -1,6 +1,6 @@
 
 import React, { useRef } from 'react';
-import { Save, Trash2, Download, Eraser, Upload, AlignCenterVertical, AlignCenterHorizontal, Copy } from 'lucide-react';
+import { Save, Trash2, Download, Eraser, Upload, AlignCenterVertical, AlignCenterHorizontal, Copy, Key } from 'lucide-react';
 
 interface ToolbarProps {
   onSave: () => void;
@@ -10,6 +10,7 @@ interface ToolbarProps {
   onDeleteSelected: () => void;
   onAlign: (direction: 'horizontal' | 'vertical') => void;
   onDuplicate: () => void;
+  onConfigApiKey: () => void;
 }
 
 const Toolbar: React.FC<ToolbarProps> = ({ 
@@ -19,7 +20,8 @@ const Toolbar: React.FC<ToolbarProps> = ({
   onImport,
   onDeleteSelected,
   onAlign,
-  onDuplicate
+  onDuplicate,
+  onConfigApiKey
 }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -73,6 +75,18 @@ const Toolbar: React.FC<ToolbarProps> = ({
 
       <button
         type="button"
+        onClick={onConfigApiKey}
+        className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-slate-700 bg-slate-50 rounded hover:bg-slate-100 transition-colors border border-slate-200"
+        title="Configurar API Key da IA"
+      >
+        <Key size={16} className="text-yellow-600" />
+        API Key
+      </button>
+
+      <div className="w-px h-6 bg-slate-200 mx-1"></div>
+
+      <button
+        type="button"
         onClick={onSave}
         className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-indigo-600 bg-indigo-50 rounded hover:bg-indigo-100 transition-colors"
         title="Salvar Progresso no Navegador"
@@ -80,8 +94,6 @@ const Toolbar: React.FC<ToolbarProps> = ({
         <Save size={16} />
         Salvar
       </button>
-
-      <div className="w-px h-6 bg-slate-200 mx-1"></div>
       
       <button
         type="button"

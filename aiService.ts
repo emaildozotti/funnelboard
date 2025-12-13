@@ -68,8 +68,14 @@ Responda APENAS com um JSON válido (sem markdown). Formato:
 
 export const generateFunnelFromAI = async (prompt: string, currentNodes: Node[] = []) => {
   try {
-    // Inicializa a API dentro da função para evitar erros de inicialização no browser (tela branca)
-    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+    // Tenta pegar do LocalStorage (definido pelo usuário) ou Environment (definido no build)
+    const apiKey = localStorage.getItem('funnelboard_api_key') || (typeof process !== 'undefined' ? process.env.API_KEY : undefined);
+
+    if (!apiKey) {
+        throw new Error("MISSING_API_KEY");
+    }
+
+    const ai = new GoogleGenAI({ apiKey });
 
     // Prepara o contexto para a IA
     const currentStateJSON = JSON.stringify({

@@ -19,6 +19,7 @@ import CustomNode from './CustomNode';
 import Toolbar from './Toolbar';
 import AiModal from './AiModal';
 import NodeDetailsModal from './NodeDetailsModal';
+import ApiKeyModal from './ApiKeyModal';
 import FloatingEdge from './FloatingEdge';
 import { SidebarItemType } from '../types';
 import { generateFunnelFromAI } from '../aiService';
@@ -34,6 +35,7 @@ const FunnelCanvasContent = () => {
   const { project, setViewport, toObject, deleteElements, fitView } = useReactFlow();
   
   const [isAiModalOpen, setIsAiModalOpen] = useState(false);
+  const [isApiKeyModalOpen, setIsApiKeyModalOpen] = useState(false);
   const [editingNodeId, setEditingNodeId] = useState<string | null>(null);
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
 
@@ -280,8 +282,13 @@ const FunnelCanvasContent = () => {
         setEdges(styledEdges);
 
         setTimeout(() => fitView({ padding: 0.2, duration: 1000 }), 100);
-    } catch (error) {
-        alert("Erro na IA. Tente novamente.");
+    } catch (error: any) {
+        if (error.message === "MISSING_API_KEY") {
+            setIsApiKeyModalOpen(true);
+            alert("Por favor, configure sua API Key do Google Gemini para usar a IA.");
+        } else {
+            alert("Erro na IA: " + error.message);
+        }
     }
   }, [nodes, setNodes, setEdges, fitView, hydrateNodes]);
 
@@ -396,6 +403,7 @@ const FunnelCanvasContent = () => {
             onAlign={onAlignNodes}
             onImport={onImport}
             onDuplicate={onDuplicate}
+            onConfigApiKey={() => setIsApiKeyModalOpen(true)}
         />
         <ReactFlow
           nodes={nodes}
@@ -425,6 +433,7 @@ const FunnelCanvasContent = () => {
         </ReactFlow>
       </div>
       <AiModal isOpen={isAiModalOpen} onClose={() => setIsAiModalOpen(false)} onGenerate={handleGenerateAi} hasContext={nodes.length > 0} />
+      <ApiKeyModal isOpen={isApiKeyModalOpen} onClose={() => setIsApiKeyModalOpen(false)} />
       <NodeDetailsModal 
         isOpen={isDetailsModalOpen}
         onClose={() => setIsDetailsModalOpen(false)}
