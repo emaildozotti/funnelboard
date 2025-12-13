@@ -3,9 +3,6 @@ import { GoogleGenAI } from "@google/genai";
 import { FUNNEL_ELEMENTS } from './constants';
 import { Node } from 'reactflow';
 
-// Inicializa a API com a chave do ambiente
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-
 const SYSTEM_INSTRUCTION = `
 Você é um Arquiteto de Funis de Marketing Sênior e Engenheiro de Software.
 
@@ -71,6 +68,9 @@ Responda APENAS com um JSON válido (sem markdown). Formato:
 
 export const generateFunnelFromAI = async (prompt: string, currentNodes: Node[] = []) => {
   try {
+    // Inicializa a API dentro da função para evitar erros de inicialização no browser (tela branca)
+    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+
     // Prepara o contexto para a IA
     const currentStateJSON = JSON.stringify({
       nodes: currentNodes.map(n => ({ 
