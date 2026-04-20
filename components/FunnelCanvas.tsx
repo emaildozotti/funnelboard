@@ -317,49 +317,82 @@ const FunnelCanvasContent = () => {
   }, [toObject]);
 
   const onExportImage = useCallback(async (format: 'png' | 'jpg' | 'pdf') => {
-    fitView({ padding: 0.12, duration: 0 });
+    const viewportEl = reactFlowWrapper.current?.querySelector('.react-flow__viewport') as HTMLElement;
+    if (!viewportEl || nodes.length === 0) return;
+
+    // Calcular bounding box de todos os nós
+    let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+    nodes.forEach(node => {
+      const w = node.width || 200;
+      const h = node.height || 100;
+      minX = Math.min(minX, node.position.x);
+      minY = Math.min(minY, node.position.y);
+      maxX = Math.max(maxX, node.position.x + w);
+      maxY = Math.max(maxY, node.position.y + h);
+    });
+
+    const pad = 80;
+    const contentW = maxX - minX;
+    const contentH = maxY - minY;
+    const scale = Math.min(2, Math.min(3000 / (contentW + pad * 2), 3000 / (contentH + pad * 2)));
+    const imgW = Math.round((contentW + pad * 2) * scale);
+    const imgH = Math.round((contentH + pad * 2) * scale);
+    const tx = (pad - minX) * scale;
+    const ty = (pad - minY) * scale;
+
+    // Sobrepõe estilos das edges para exportação (remove animação e dasharray)
+    const styleEl = document.createElement('style');
+    styleEl.id = '__export_override__';
+    styleEl.textContent = `.electric-flow { stroke-dasharray: none !important; animation: none !important; opacity: 1 !important; stroke: #6366f1 !important; stroke-width: 2.5px !important; }`;
+    document.head.appendChild(styleEl);
 
     await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
-    await new Promise(r => setTimeout(r, 80));
-
-    const element = reactFlowWrapper.current?.querySelector('.react-flow__viewport') as HTMLElement;
-    const wrapper = reactFlowWrapper.current?.querySelector('.react-flow') as HTMLElement;
-    const target = wrapper || element;
-    if (!target) return;
 
     const bg = format === 'jpg' ? '#ffffff' : '#f1f5f9';
-    const filename = `funil-${new Date().toISOString().slice(0,10)}`;
+    const filename = `funil-${new Date().toISOString().slice(0, 10)}`;
+
+    const captureOpts = {
+      backgroundColor: bg,
+      pixelRatio: 2,
+      width: imgW,
+      height: imgH,
+      style: {
+        width: `${imgW}px`,
+        height: `${imgH}px`,
+        transform: `translate(${tx}px, ${ty}px) scale(${scale})`,
+        transformOrigin: 'top left',
+      },
+    };
 
     try {
-      if (format === 'png') {
-        const dataUrl = await toPng(target, { backgroundColor: bg, pixelRatio: 2 });
-        const a = document.createElement('a');
-        a.href = dataUrl;
-        a.download = `${filename}.png`;
-        a.click();
-      } else if (format === 'jpg') {
-        const dataUrl = await toJpeg(target, { backgroundColor: bg, quality: 0.95, pixelRatio: 2 });
-        const a = document.createElement('a');
-        a.href = dataUrl;
-        a.download = `${filename}.jpg`;
-        a.click();
-      } else if (format === 'pdf') {
-        const dataUrl = await toPng(target, { backgroundColor: '#ffffff', pixelRatio: 2 });
+      let dataUrl: string;
+      if (format === 'jpg') {
+        dataUrl = await toJpeg(viewportEl, { ...captureOpts, quality: 0.95 });
+      } else {
+        dataUrl = await toPng(viewportEl, captureOpts);
+      }
+
+      if (format === 'pdf') {
         const img = new Image();
         img.src = dataUrl;
         await new Promise(r => { img.onload = r; });
-        const w = img.naturalWidth;
-        const h = img.naturalHeight;
-        const orientation = w > h ? 'landscape' : 'portrait';
-        const pdf = new jsPDF({ orientation, unit: 'px', format: [w, h], hotfixes: ['px_scaling'] });
-        pdf.addImage(dataUrl, 'PNG', 0, 0, w, h);
+        const orientation = imgW > imgH ? 'landscape' : 'portrait';
+        const pdf = new jsPDF({ orientation, unit: 'px', format: [imgW, imgH], hotfixes: ['px_scaling'] });
+        pdf.addImage(dataUrl, 'PNG', 0, 0, imgW, imgH);
         pdf.save(`${filename}.pdf`);
+      } else {
+        const a = document.createElement('a');
+        a.href = dataUrl;
+        a.download = `${filename}.${format}`;
+        a.click();
       }
     } catch (err) {
       console.error('Erro ao exportar imagem:', err);
       alert('Erro ao exportar. Tente novamente.');
+    } finally {
+      document.getElementById('__export_override__')?.remove();
     }
-  }, [fitView, reactFlowWrapper]);
+  }, [nodes, reactFlowWrapper]);
 
   const onAlignNodes = useCallback((direction: 'horizontal' | 'vertical') => {
     const selectedNodes = nodes.filter((n) => n.selected);
