@@ -343,7 +343,7 @@ const FunnelCanvasContent = () => {
     // Sobrepõe estilos das edges para exportação (remove animação e dasharray)
     const styleEl = document.createElement('style');
     styleEl.id = '__export_override__';
-    styleEl.textContent = `.electric-flow { stroke-dasharray: none !important; animation: none !important; opacity: 1 !important; stroke: #6366f1 !important; stroke-width: 2.5px !important; }`;
+    styleEl.textContent = `.electric-flow { stroke-dasharray: none !important; animation: none !important; opacity: 1 !important; }`;
     document.head.appendChild(styleEl);
 
     await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));

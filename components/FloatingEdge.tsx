@@ -24,22 +24,26 @@ function FloatingEdge({ id, source, target, markerEnd, style }: EdgeProps) {
 
   return (
     <>
-      {/* Caminho Invisível Grosso para Interação (Click/Hover) */}
+      {/* Caminho invisível para área de clique */}
       <path
         id={`${id}-selector`}
         className="edge-selector"
         d={edgePath}
         fill="none"
-        stroke="rgba(255,0,0,0.01)" /* Hack para garantir hit-test em todos browsers */
-        strokeWidth={40} /* Área de clique GRANDE */
+        stroke="transparent"
+        strokeWidth={40}
         style={{ cursor: 'pointer', pointerEvents: 'stroke' }}
       />
-      {/* Caminho Visível Animado */}
+      {/* Caminho visível — atributos inline garantem captura correta no export */}
       <path
         id={id}
         className="react-flow__edge-path electric-flow"
         d={edgePath}
         markerEnd={markerEnd}
+        fill="none"
+        stroke="#6366f1"
+        strokeWidth={2.5}
+        opacity={0.85}
         style={style}
       />
     </>
