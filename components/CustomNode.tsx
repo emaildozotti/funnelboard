@@ -1,6 +1,6 @@
 
 import React, { memo, useState, useRef, useEffect } from 'react';
-import { NodeProps, NodeToolbar, useReactFlow, Position, Handle, NodeResizer } from 'reactflow';
+import { NodeProps, NodeToolbar, useReactFlow, Position, Handle, NodeResizer, ResizeDragEvent, ResizeParams } from 'reactflow';
 import { Trash2, Edit, Plus, X, Maximize2, StickyNote, ImagePlus } from 'lucide-react';
 import { IconMap, CATEGORY_LABELS } from '../constants';
 import { FunnelNodeData } from '../types';
@@ -12,6 +12,7 @@ const CustomNode = ({ id, data, selected }: NodeProps<FunnelNodeData>) => {
   const [labelInput, setLabelInput] = useState(data.label);
   const labelInputRef = useRef<HTMLInputElement | HTMLTextAreaElement>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
+  const resizeStartRef = useRef<{ width: number; fontSize: number } | null>(null);
 
   const isListType = ['action-form', 'action-quiz', 'crm-task'].includes(data.type);
   const items = data.items || [];
@@ -139,50 +140,75 @@ const CustomNode = ({ id, data, selected }: NodeProps<FunnelNodeData>) => {
 
   // --- RENDERIZAÇÃO ESPECÍFICA PARA TEXTO (Títulos e Notas) ---
   if (isTextNode) {
-    return (
-        <>
-            <NodeResizer minWidth={100} minHeight={40} isVisible={selected} />
-            <NodeToolbar isVisible={selected} position={Position.Top} className="mb-2 flex gap-2">
-                 <button onClick={onEditLabel} className="bg-slate-600 text-white p-1.5 rounded-md shadow-md hover:bg-slate-700 transition-colors" title="Editar Texto">
-                   <Edit size={14} />
-                 </button>
-                 <button onClick={onDeleteNode} className="bg-red-500 text-white p-1.5 rounded-md shadow-md hover:bg-red-600 transition-colors" title="Excluir">
-                   <Trash2 size={14} />
-                 </button>
-            </NodeToolbar>
+    const defaultFontSize = isTitle ? 28 : 14;
+    const fontSize = data.fontSize ?? defaultFontSize;
 
-            <div className={`w-full h-full flex flex-col ${isTitle ? 'bg-transparent' : 'bg-[#fff9c4] border border-yellow-200 shadow-sm rounded-lg p-2'}`}>
-                {isEditingLabel ? (
-                    isTitle ? (
-                        <input
-                            ref={labelInputRef as React.RefObject<HTMLInputElement>}
-                            type="text"
-                            value={labelInput}
-                            onChange={(e) => setLabelInput(e.target.value)}
-                            onBlur={onSaveLabel}
-                            onKeyDown={onKeyDownLabel}
-                            className="w-full h-full bg-transparent text-2xl font-black text-slate-800 outline-none border-b-2 border-indigo-500"
-                        />
-                    ) : (
-                        <textarea
-                            ref={labelInputRef as React.RefObject<HTMLTextAreaElement>}
-                            value={labelInput}
-                            onChange={(e) => setLabelInput(e.target.value)}
-                            onBlur={onSaveLabel}
-                            className="w-full h-full bg-transparent text-sm text-slate-700 outline-none resize-none font-medium leading-relaxed"
-                        />
-                    )
-                ) : (
-                    <div 
-                        onDoubleClick={onEditLabel}
-                        className={`w-full h-full cursor-text ${isTitle ? 'text-2xl font-black text-slate-800 flex items-center' : 'text-sm text-slate-700 whitespace-pre-wrap leading-relaxed'}`}
-                    >
-                        {data.label}
-                    </div>
-                )}
+    const onTextResizeStart = (_: ResizeDragEvent, params: ResizeParams) => {
+      resizeStartRef.current = { width: params.width, fontSize };
+    };
+
+    const onTextResize = (_: ResizeDragEvent, params: ResizeParams) => {
+      const isDiagonal = params.direction[0] !== 0 && params.direction[1] !== 0;
+      if (isDiagonal && resizeStartRef.current) {
+        const ratio = params.width / resizeStartRef.current.width;
+        const newSize = Math.round(resizeStartRef.current.fontSize * ratio);
+        updateNodeData({ fontSize: Math.max(8, Math.min(200, newSize)) });
+      }
+    };
+
+    const textStyle = { fontSize: `${fontSize}px` };
+
+    return (
+      <>
+        <NodeResizer
+          minWidth={100} minHeight={40} isVisible={selected}
+          onResizeStart={onTextResizeStart}
+          onResize={onTextResize}
+        />
+        <NodeToolbar isVisible={selected} position={Position.Top} className="mb-2 flex gap-2">
+          <button onClick={onEditLabel} className="bg-slate-600 text-white p-1.5 rounded-md shadow-md hover:bg-slate-700 transition-colors" title="Editar Texto">
+            <Edit size={14} />
+          </button>
+          <button onClick={onDeleteNode} className="bg-red-500 text-white p-1.5 rounded-md shadow-md hover:bg-red-600 transition-colors" title="Excluir">
+            <Trash2 size={14} />
+          </button>
+        </NodeToolbar>
+
+        <div className={`w-full h-full flex flex-col ${isTitle ? 'bg-transparent' : 'bg-[#fff9c4] border border-yellow-200 shadow-sm rounded-lg p-2'}`}>
+          {isEditingLabel ? (
+            isTitle ? (
+              <input
+                ref={labelInputRef as React.RefObject<HTMLInputElement>}
+                type="text"
+                value={labelInput}
+                onChange={(e) => setLabelInput(e.target.value)}
+                onBlur={onSaveLabel}
+                onKeyDown={onKeyDownLabel}
+                style={textStyle}
+                className="w-full h-full bg-transparent font-black text-slate-800 outline-none border-b-2 border-indigo-500"
+              />
+            ) : (
+              <textarea
+                ref={labelInputRef as React.RefObject<HTMLTextAreaElement>}
+                value={labelInput}
+                onChange={(e) => setLabelInput(e.target.value)}
+                onBlur={onSaveLabel}
+                style={textStyle}
+                className="w-full h-full bg-transparent text-slate-700 outline-none resize-none font-medium leading-relaxed"
+              />
+            )
+          ) : (
+            <div
+              onDoubleClick={onEditLabel}
+              style={textStyle}
+              className={`w-full h-full cursor-text ${isTitle ? 'font-black text-slate-800 flex items-center' : 'text-slate-700 whitespace-pre-wrap leading-relaxed'}`}
+            >
+              {data.label}
             </div>
-        </>
-    )
+          )}
+        </div>
+      </>
+    );
   }
 
   // --- RENDERIZAÇÃO PADRÃO (Cards de Funil) ---

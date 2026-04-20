@@ -11,6 +11,7 @@ export interface FunnelNodeData {
   items?: string[]; // Lista opcional para perguntas de form/quiz
   description?: string; // Notas, copy ou detalhes adicionais
   imageUrl?: string; // base64 para nós de imagem
+  fontSize?: number; // tamanho da fonte para nós de texto
   onEdit?: (id: string) => void; // Callback para abrir o modal de detalhes
 }
 
