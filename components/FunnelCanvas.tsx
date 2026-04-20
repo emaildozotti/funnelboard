@@ -502,6 +502,14 @@ const FunnelCanvasContent = () => {
     const handlePaste = (e: ClipboardEvent) => {
       if (['INPUT', 'TEXTAREA'].includes((e.target as HTMLElement).tagName)) return;
 
+      // Prioridade 1: nós copiados internamente (Ctrl+C no board)
+      if (bufferedNodes.length > 0) {
+        e.preventDefault();
+        onPaste();
+        return;
+      }
+
+      // Prioridade 2: imagem no clipboard do sistema
       const items = e.clipboardData?.items;
       if (!items) return;
 
@@ -523,9 +531,6 @@ const FunnelCanvasContent = () => {
           return;
         }
       }
-
-      // Sem imagem no clipboard: colar nós copiados
-      onPaste();
     };
 
     document.addEventListener('keydown', handleKeyDown);
@@ -534,7 +539,7 @@ const FunnelCanvasContent = () => {
       document.removeEventListener('keydown', handleKeyDown);
       document.removeEventListener('paste', handlePaste);
     };
-  }, [onCopy, onPaste, createImageNode, reactFlowWrapper]);
+  }, [onCopy, onPaste, createImageNode, reactFlowWrapper, bufferedNodes]);
 
   return (
     <div className="flex h-full w-full overflow-hidden">
