@@ -1,22 +1,24 @@
 
 import React, { memo, useState, useRef, useEffect } from 'react';
 import { NodeProps, NodeToolbar, useReactFlow, Position, Handle, NodeResizer } from 'reactflow';
-import { Trash2, Edit, Plus, X, Maximize2, StickyNote } from 'lucide-react';
+import { Trash2, Edit, Plus, X, Maximize2, StickyNote, ImagePlus } from 'lucide-react';
 import { IconMap, CATEGORY_LABELS } from '../constants';
 import { FunnelNodeData } from '../types';
 
 const CustomNode = ({ id, data, selected }: NodeProps<FunnelNodeData>) => {
   const { deleteElements, setNodes } = useReactFlow();
-  
+
   const [isEditingLabel, setIsEditingLabel] = useState(false);
   const [labelInput, setLabelInput] = useState(data.label);
   const labelInputRef = useRef<HTMLInputElement | HTMLTextAreaElement>(null);
+  const imageInputRef = useRef<HTMLInputElement>(null);
 
   const isListType = ['action-form', 'action-quiz', 'crm-task'].includes(data.type);
   const items = data.items || [];
   const hasDescription = data.description && data.description.trim().length > 0;
   const isTraffic = data.category === 'traffic';
   const isTextNode = data.category === 'text';
+  const isImageNode = data.type === 'image-node';
 
   const IconComponent = IconMap[data.iconName] || IconMap.MousePointerClick;
   
@@ -69,6 +71,71 @@ const CustomNode = ({ id, data, selected }: NodeProps<FunnelNodeData>) => {
       // Para textarea (notas), Enter permite nova linha
       if (!isNote && e.key === 'Enter') onSaveLabel(); 
   };
+
+  const handleImageFile = (file: File) => {
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      updateNodeData({ imageUrl: ev.target?.result as string });
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const onImageInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) handleImageFile(file);
+    e.target.value = '';
+  };
+
+  // --- RENDERIZAÇÃO ESPECÍFICA PARA IMAGEM ---
+  if (isImageNode) {
+    return (
+      <>
+        <NodeResizer minWidth={120} minHeight={80} isVisible={selected} />
+        <NodeToolbar isVisible={selected} position={Position.Top} className="mb-2 flex gap-2">
+          <button
+            onClick={() => imageInputRef.current?.click()}
+            className="bg-slate-600 text-white p-1.5 rounded-md shadow-md hover:bg-slate-700 transition-colors flex items-center gap-1 px-2"
+            title="Trocar imagem"
+          >
+            <ImagePlus size={14} /><span className="text-[10px] font-bold">Trocar</span>
+          </button>
+          <button onClick={onDeleteNode} className="bg-red-500 text-white p-1.5 rounded-md shadow-md hover:bg-red-600 transition-colors" title="Excluir">
+            <Trash2 size={14} />
+          </button>
+        </NodeToolbar>
+
+        <Handle type="target" position={Position.Top} style={{ opacity: 0, width: '100%', height: '12px', top: '-6px', left: 0, borderRadius: 0, border: 'none', background: 'transparent' }} id="t" />
+        <Handle type="source" position={Position.Bottom} style={{ opacity: 0, width: '100%', height: '12px', bottom: '-6px', top: 'auto', left: 0, borderRadius: 0, border: 'none', background: 'transparent' }} id="b" />
+        <Handle type="target" position={Position.Left} style={{ opacity: 0, width: '12px', height: '100%', left: '-6px', top: 0, borderRadius: 0, border: 'none', background: 'transparent' }} id="l" />
+        <Handle type="source" position={Position.Right} style={{ opacity: 0, width: '12px', height: '100%', right: '-6px', left: 'auto', top: 0, borderRadius: 0, border: 'none', background: 'transparent' }} id="r" />
+
+        <input ref={imageInputRef} type="file" accept="image/*" className="hidden nodrag" onChange={onImageInputChange} />
+
+        <div
+          className={`w-full h-full rounded-xl overflow-hidden border-2 transition-all duration-200 ${selected ? 'ring-2 ring-offset-2 ring-indigo-500 border-indigo-300' : 'border-slate-200 hover:border-slate-300'}`}
+          onDrop={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            const file = e.dataTransfer.files?.[0];
+            if (file?.type.startsWith('image/')) handleImageFile(file);
+          }}
+          onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); }}
+        >
+          {data.imageUrl ? (
+            <img src={data.imageUrl} alt="imagem" className="w-full h-full object-contain bg-white" />
+          ) : (
+            <div
+              className="w-full h-full flex flex-col items-center justify-center gap-2 bg-slate-50 cursor-pointer hover:bg-slate-100 transition-colors"
+              onClick={() => imageInputRef.current?.click()}
+            >
+              <ImagePlus size={28} className="text-slate-300" />
+              <span className="text-[11px] text-slate-400 font-medium text-center px-2">Clique para adicionar<br />ou cole uma imagem</span>
+            </div>
+          )}
+        </div>
+      </>
+    );
+  }
 
   // --- RENDERIZAÇÃO ESPECÍFICA PARA TEXTO (Títulos e Notas) ---
   if (isTextNode) {

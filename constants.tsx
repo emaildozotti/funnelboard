@@ -63,7 +63,8 @@ import {
   PhoneForwarded, // Follow Up
   FileOutput, // Proposta
   Handshake, // Fechamento
-  Users // Reunião/Call
+  Users, // Reunião/Call
+  Image // Imagem
 } from 'lucide-react';
 import { SidebarItemType } from './types';
 
@@ -131,7 +132,8 @@ export const IconMap: Record<string, React.ElementType> = {
   PhoneForwarded,
   FileOutput,
   Handshake,
-  Users
+  Users,
+  Image
 };
 
 export const CATEGORY_COLORS = {
@@ -142,6 +144,7 @@ export const CATEGORY_COLORS = {
   commercial: 'border-slate-600 text-slate-700 bg-slate-100', // Nova cor séria/business
   decision: 'border-purple-500 text-purple-600 bg-purple-50',
   text: 'border-slate-300 text-slate-600 bg-slate-50',
+  image: 'border-slate-300 text-slate-500 bg-slate-50',
 };
 
 export const CATEGORY_LABELS: Record<string, string> = {
@@ -151,7 +154,8 @@ export const CATEGORY_LABELS: Record<string, string> = {
   crm: 'CRM & Pipeline',
   commercial: 'Comercial & Vendas',
   decision: 'Lógica',
-  text: 'Texto & Notas'
+  text: 'Texto & Notas',
+  image: 'Imagem'
 };
 
 // LISTA LIMPA E ESSENCIAL
@@ -159,6 +163,9 @@ export const FUNNEL_ELEMENTS: SidebarItemType[] = [
   // --- TEXTO ---
   { type: 'text-title', label: 'Título Grande', category: 'text', iconName: 'Type' },
   { type: 'text-area', label: 'Bloco de Notas', category: 'text', iconName: 'StickyNote' },
+
+  // --- IMAGEM ---
+  { type: 'image-node', label: 'Imagem', category: 'image', iconName: 'Image' },
 
   // --- TRÁFEGO ---
   { type: 'traffic-fb', label: 'Facebook', category: 'traffic', iconName: 'Facebook' },

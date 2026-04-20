@@ -1,7 +1,7 @@
 
 import { Node, Edge, Viewport } from 'reactflow';
 
-export type FunnelCategory = 'traffic' | 'page' | 'action' | 'crm' | 'commercial' | 'decision' | 'text';
+export type FunnelCategory = 'traffic' | 'page' | 'action' | 'crm' | 'commercial' | 'decision' | 'text' | 'image';
 
 export interface FunnelNodeData {
   label: string;
@@ -10,6 +10,7 @@ export interface FunnelNodeData {
   iconName: string;
   items?: string[]; // Lista opcional para perguntas de form/quiz
   description?: string; // Notas, copy ou detalhes adicionais
+  imageUrl?: string; // base64 para nós de imagem
   onEdit?: (id: string) => void; // Callback para abrir o modal de detalhes
 }
 

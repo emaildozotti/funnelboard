@@ -165,9 +165,46 @@ const FunnelCanvasContent = () => {
     event.dataTransfer.dropEffect = 'move';
   }, []);
 
+  const createImageNode = useCallback((imageUrl: string, screenX: number, screenY: number) => {
+    const reactFlowBounds = reactFlowWrapper.current?.getBoundingClientRect();
+    const position = reactFlowBounds
+      ? project({ x: screenX - reactFlowBounds.left, y: screenY - reactFlowBounds.top })
+      : project({ x: screenX, y: screenY });
+    const newNode: Node = {
+      id: `image-node-${Date.now()}`,
+      type: 'custom',
+      position,
+      style: { width: 280, height: 200 },
+      data: {
+        label: 'Imagem',
+        type: 'image-node',
+        category: 'image',
+        iconName: 'Image',
+        imageUrl,
+        items: [],
+        description: '',
+        onEdit: onOpenDetails,
+      },
+    };
+    setNodes((nds) => nds.concat(newNode));
+  }, [project, reactFlowWrapper, onOpenDetails, setNodes]);
+
   const onDrop = useCallback(
     (event: React.DragEvent) => {
       event.preventDefault();
+
+      // Imagem arrastada do sistema de arquivos
+      const files = event.dataTransfer.files;
+      if (files && files.length > 0 && files[0].type.startsWith('image/')) {
+        const reader = new FileReader();
+        reader.onload = (ev) => {
+          const imageUrl = ev.target?.result as string;
+          createImageNode(imageUrl, event.clientX, event.clientY);
+        };
+        reader.readAsDataURL(files[0]);
+        return;
+      }
+
       const typeData = event.dataTransfer.getData('application/reactflow');
       if (!typeData) return;
       
@@ -376,19 +413,48 @@ const FunnelCanvasContent = () => {
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (['INPUT', 'TEXTAREA'].includes((e.target as HTMLElement).tagName)) return;
-
       if ((e.ctrlKey || e.metaKey) && e.key === 'c') {
         e.preventDefault();
         onCopy();
       }
-      if ((e.ctrlKey || e.metaKey) && e.key === 'v') {
-        e.preventDefault();
-        onPaste();
-      }
     };
+
+    const handlePaste = (e: ClipboardEvent) => {
+      if (['INPUT', 'TEXTAREA'].includes((e.target as HTMLElement).tagName)) return;
+
+      const items = e.clipboardData?.items;
+      if (!items) return;
+
+      for (let i = 0; i < items.length; i++) {
+        if (items[i].type.startsWith('image/')) {
+          e.preventDefault();
+          const file = items[i].getAsFile();
+          if (!file) continue;
+          const reader = new FileReader();
+          reader.onload = (ev) => {
+            const imageUrl = ev.target?.result as string;
+            const wrapper = reactFlowWrapper.current;
+            const bounds = wrapper?.getBoundingClientRect();
+            const cx = bounds ? bounds.left + bounds.width / 2 : window.innerWidth / 2;
+            const cy = bounds ? bounds.top + bounds.height / 2 : window.innerHeight / 2;
+            createImageNode(imageUrl, cx, cy);
+          };
+          reader.readAsDataURL(file);
+          return;
+        }
+      }
+
+      // Sem imagem no clipboard: colar nós copiados
+      onPaste();
+    };
+
     document.addEventListener('keydown', handleKeyDown);
-    return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [onCopy, onPaste]);
+    document.addEventListener('paste', handlePaste);
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+      document.removeEventListener('paste', handlePaste);
+    };
+  }, [onCopy, onPaste, createImageNode, reactFlowWrapper]);
 
   return (
     <div className="flex h-full w-full overflow-hidden">
