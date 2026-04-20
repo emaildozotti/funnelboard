@@ -43,7 +43,8 @@ function FloatingEdge({ id, source, target, markerEnd, style }: EdgeProps) {
         fill="none"
         stroke="#6366f1"
         strokeWidth={2.5}
-        opacity={0.85}
+        strokeDasharray="10"
+        strokeOpacity={0.85}
         style={style}
       />
     </>
