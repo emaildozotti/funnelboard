@@ -25,6 +25,8 @@ import HistoryModal from './HistoryModal';
 import FloatingEdge from './FloatingEdge';
 import { SidebarItemType, HistoryEntry } from '../types';
 import { generateFunnelFromAI } from '../aiService';
+import { toPng, toJpeg } from 'html-to-image';
+import jsPDF from 'jspdf';
 
 const nodeTypes = { custom: CustomNode };
 const edgeTypes = { floating: FloatingEdge }; 
@@ -306,13 +308,58 @@ const FunnelCanvasContent = () => {
   const onExport = useCallback(() => {
     const flow = toObject();
     const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(flow, null, 2));
-    const downloadAnchorNode = document.createElement('a');
-    downloadAnchorNode.setAttribute("href", dataStr);
-    downloadAnchorNode.setAttribute("download", "funnel_export.json");
-    document.body.appendChild(downloadAnchorNode);
-    downloadAnchorNode.click();
-    downloadAnchorNode.remove();
+    const a = document.createElement('a');
+    a.setAttribute("href", dataStr);
+    a.setAttribute("download", "funnel_export.json");
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
   }, [toObject]);
+
+  const onExportImage = useCallback(async (format: 'png' | 'jpg' | 'pdf') => {
+    fitView({ padding: 0.12, duration: 0 });
+
+    await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+    await new Promise(r => setTimeout(r, 80));
+
+    const element = reactFlowWrapper.current?.querySelector('.react-flow__viewport') as HTMLElement;
+    const wrapper = reactFlowWrapper.current?.querySelector('.react-flow') as HTMLElement;
+    const target = wrapper || element;
+    if (!target) return;
+
+    const bg = format === 'jpg' ? '#ffffff' : '#f1f5f9';
+    const filename = `funil-${new Date().toISOString().slice(0,10)}`;
+
+    try {
+      if (format === 'png') {
+        const dataUrl = await toPng(target, { backgroundColor: bg, pixelRatio: 2 });
+        const a = document.createElement('a');
+        a.href = dataUrl;
+        a.download = `${filename}.png`;
+        a.click();
+      } else if (format === 'jpg') {
+        const dataUrl = await toJpeg(target, { backgroundColor: bg, quality: 0.95, pixelRatio: 2 });
+        const a = document.createElement('a');
+        a.href = dataUrl;
+        a.download = `${filename}.jpg`;
+        a.click();
+      } else if (format === 'pdf') {
+        const dataUrl = await toPng(target, { backgroundColor: '#ffffff', pixelRatio: 2 });
+        const img = new Image();
+        img.src = dataUrl;
+        await new Promise(r => { img.onload = r; });
+        const w = img.naturalWidth;
+        const h = img.naturalHeight;
+        const orientation = w > h ? 'landscape' : 'portrait';
+        const pdf = new jsPDF({ orientation, unit: 'px', format: [w, h], hotfixes: ['px_scaling'] });
+        pdf.addImage(dataUrl, 'PNG', 0, 0, w, h);
+        pdf.save(`${filename}.pdf`);
+      }
+    } catch (err) {
+      console.error('Erro ao exportar imagem:', err);
+      alert('Erro ao exportar. Tente novamente.');
+    }
+  }, [fitView, reactFlowWrapper]);
 
   const onAlignNodes = useCallback((direction: 'horizontal' | 'vertical') => {
     const selectedNodes = nodes.filter((n) => n.selected);
@@ -468,9 +515,10 @@ const FunnelCanvasContent = () => {
         ref={reactFlowWrapper}
         onContextMenu={(e) => e.preventDefault()}
       >
-        <Toolbar 
-            onSave={onSave} onClear={onClear} 
-            onExport={onExport} onDeleteSelected={onDeleteSelected} 
+        <Toolbar
+            onSave={onSave} onClear={onClear}
+            onExport={onExport} onExportImage={onExportImage}
+            onDeleteSelected={onDeleteSelected}
             onAlign={onAlignNodes}
             onImport={onImport}
             onConfigApiKey={() => setIsApiKeyModalOpen(true)}
